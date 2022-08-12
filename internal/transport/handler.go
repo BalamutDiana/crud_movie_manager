@@ -110,12 +110,15 @@ func (h *Handler) getMovieByID(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) insertMovie(w http.ResponseWriter, r *http.Request) {
 	reqBytes, err := ioutil.ReadAll(r.Body)
 	if err != nil {
+		log.Println("insertMovie() error:", err)
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
+
 	var movie domain.Movie
 
 	if err = json.Unmarshal(reqBytes, &movie); err != nil {
+		log.Println("unmarshaling error:", err)
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
@@ -157,19 +160,21 @@ func (h *Handler) updateMovie(w http.ResponseWriter, r *http.Request) {
 
 	reqBytes, err := ioutil.ReadAll(r.Body)
 	if err != nil {
+		log.Println("updateMovie() error:", err)
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
 	var upd domain.Movie
 	if err = json.Unmarshal(reqBytes, &upd); err != nil {
+		log.Println("unmarshaling error:", err)
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
 	err = h.movieService.UpdateMovie(context.TODO(), id, upd)
 	if err != nil {
-		log.Println("updateMovie() error:", err)
+		log.Println("UpdateMovie() error:", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
