@@ -30,4 +30,4 @@ go build -o app cmd/main.go
 ./app
 ```
 ### API example
-![image](https://github.com/BalamutDiana/crud_movie_manager/blob/main/example.mkv)
+![image](https://github.com/BalamutDiana/crud_movie_manager/blob/main/example.gif)
