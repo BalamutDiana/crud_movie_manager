@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 	"time"
@@ -13,6 +14,7 @@ import (
 )
 
 func main() {
+	fmt.Println("ok")
 	db, err := database.NewPostgresConnection(database.ConnectionInfo{
 		Host:     "localhost",
 		Port:     5432,

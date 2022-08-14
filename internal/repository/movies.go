@@ -3,7 +3,6 @@ package internal
 import (
 	"context"
 	"database/sql"
-	"log"
 
 	"github.com/BalamutDiana/crud_movie_manager/internal/domain"
 )
@@ -43,7 +42,7 @@ func (m *Movies) GetMovies(ctx context.Context) ([]domain.Movie, error) {
 
 func (m *Movies) GetMovieByID(ctx context.Context, id int64) (domain.Movie, error) {
 	var movie domain.Movie
-	log.Printf("id: %d", id)
+
 	err := m.db.QueryRow("select * from movies where id = $1", id).
 		Scan(&movie.ID, &movie.Title, &movie.Release, &movie.StreamingService, &movie.SavedAt)
 
