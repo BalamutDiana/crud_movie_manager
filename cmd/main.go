@@ -14,14 +14,14 @@ import (
 )
 
 func main() {
-	fmt.Println("ok")
+
 	db, err := database.NewPostgresConnection(database.ConnectionInfo{
 		Host:     "localhost",
 		Port:     5432,
 		Username: "postgres",
 		DBName:   "postgres",
 		SSLMode:  "disable",
-		Password: "1marvin2mode3",
+		Password: "password",
 	})
 	if err != nil {
 		log.Fatal(err)
