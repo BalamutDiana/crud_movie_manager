@@ -10,5 +10,14 @@
 docker-compose up --build crud_movie_manager
 ```
 
+#### Json example for POST query:
+```json
+{
+    "title": "Witcher",
+    "release": "2020",
+    "streamingService": "Netflix"
+}
+```
+
 ### API example
 ![image](https://github.com/BalamutDiana/crud_movie_manager/blob/main/example.gif)
