@@ -55,9 +55,7 @@ func loggingMiddleware(next http.Handler) http.Handler {
 }
 
 func (h *Handler) getMovies(w http.ResponseWriter, r *http.Request) {
-
 	m, err := h.movieService.GetMovies(context.TODO())
-
 	if err != nil {
 		log.Println("getMovies() error:", err)
 		w.WriteHeader(http.StatusInternalServerError)
@@ -77,7 +75,6 @@ func (h *Handler) getMovies(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) getMovieByID(w http.ResponseWriter, r *http.Request) {
 	id, err := getIdFromRequest(r)
-
 	if err != nil {
 		log.Println("getMovieByID() error:", err)
 		w.WriteHeader(http.StatusBadRequest)

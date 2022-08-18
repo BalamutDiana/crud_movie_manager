@@ -16,7 +16,6 @@ func NewMovies(db *sql.DB) *Movies {
 }
 
 func (m *Movies) GetMovies(ctx context.Context) ([]domain.Movie, error) {
-
 	rows, err := m.db.Query("select * from movies")
 	if err != nil {
 		return nil, err
