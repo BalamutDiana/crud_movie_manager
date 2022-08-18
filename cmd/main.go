@@ -1,9 +1,9 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"time"
 
 	repo "github.com/BalamutDiana/crud_movie_manager/internal/repository"
@@ -14,14 +14,15 @@ import (
 )
 
 func main() {
-	fmt.Println("ok")
+
+	password := os.Getenv("DB_PASSWORD")
 	db, err := database.NewPostgresConnection(database.ConnectionInfo{
-		Host:     "localhost",
+		Host:     "host.docker.internal",
 		Port:     5432,
 		Username: "postgres",
 		DBName:   "postgres",
 		SSLMode:  "disable",
-		Password: "1marvin2mode3",
+		Password: password,
 	})
 	if err != nil {
 		log.Fatal(err)
