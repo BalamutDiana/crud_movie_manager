@@ -9,3 +9,9 @@ type Movie struct {
 	StreamingService string    `json:"streamingService"`
 	SavedAt          time.Time `json:"savedAt,omitempty"`
 }
+
+type MovieMainInfo struct {
+	Title            string `json:"title"`
+	Release          string `json:"release"`
+	StreamingService string `json:"streamingService"`
+}

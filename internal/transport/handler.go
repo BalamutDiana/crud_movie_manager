@@ -9,9 +9,16 @@ import (
 	"net/http"
 	"strconv"
 
+	_ "github.com/BalamutDiana/crud_movie_manager/docs"
 	"github.com/BalamutDiana/crud_movie_manager/internal/domain"
 	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
+	httpSwagger "github.com/swaggo/http-swagger"
+)
+
+const (
+	// JSONDocumentationPath is the path of the swagger documentation in json format.
+	JSONDocumentationPath = "/documentation/json"
 )
 
 type Movies interface {
@@ -26,6 +33,10 @@ type Handler struct {
 	movieService Movies
 }
 
+type statusResponse struct {
+	Message string `json:"status"`
+}
+
 func NewHandler(movies Movies) *Handler {
 	return &Handler{
 		movieService: movies,
@@ -35,6 +46,7 @@ func NewHandler(movies Movies) *Handler {
 func (h *Handler) InitRouter() *mux.Router {
 	r := mux.NewRouter()
 	r.Use(loggingMiddleware)
+	r.PathPrefix("/swagger/").Handler(httpSwagger.WrapHandler)
 
 	books := r.PathPrefix("/movies").Subrouter()
 	{
@@ -48,6 +60,13 @@ func (h *Handler) InitRouter() *mux.Router {
 	return r
 }
 
+// GetMovies godoc
+// @Summary     Get movies
+// @Description Get all movies list
+// @Accept      json
+// @Produce     json
+// @Success     200 {object} []domain.Movie
+// @Router      /movies [get]
 func (h *Handler) getMovies(w http.ResponseWriter, r *http.Request) {
 	m, err := h.movieService.GetMovies(context.TODO())
 	if err != nil {
@@ -73,6 +92,14 @@ func (h *Handler) getMovies(w http.ResponseWriter, r *http.Request) {
 	w.Write(resp)
 }
 
+// GetMoviesByID godoc
+// @Summary     Get movies by ID
+// @Description Get movies by ID
+// @Accept      json
+// @Produce     json
+// @Param       id      path     string true "account id"
+// @Success     200     {object} domain.Movie
+// @Router      /movies/{id} [get]
 func (h *Handler) getMovieByID(w http.ResponseWriter, r *http.Request) {
 	id, err := getIdFromRequest(r)
 	if err != nil {
@@ -113,6 +140,14 @@ func (h *Handler) getMovieByID(w http.ResponseWriter, r *http.Request) {
 	w.Write(response)
 }
 
+// InsertMovie doc
+// @Summary     Add new movie
+// @Description Add new movie
+// @Accept      json
+// @Produce     json
+// @Param       input body     domain.MovieMainInfo true "Add movie to list, 'id' and 'savedAt' not necessary params"
+// @Success     200,201      {object}             domain.MovieMainInfo
+// @Router      /movies [post]
 func (h *Handler) insertMovie(w http.ResponseWriter, r *http.Request) {
 	reqBytes, err := ioutil.ReadAll(r.Body)
 	if err != nil {
@@ -148,6 +183,14 @@ func (h *Handler) insertMovie(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusCreated)
 }
 
+// DeleteMovie doc
+// @Summary     DeleteMovie from list
+// @Description DeleteMovie from list
+// @Accept      json
+// @Produce     json
+// @Param       id  body     id path string true "account id"
+// @Success     200 {object} statusResponse
+// @Router      /movies/{id} [delete]
 func (h *Handler) deleteMovie(w http.ResponseWriter, r *http.Request) {
 	id, err := getIdFromRequest(r)
 	if err != nil {
@@ -171,6 +214,15 @@ func (h *Handler) deleteMovie(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
+// UpdateMovie doc
+// @Summary     Update movie info
+// @Description Update movie info
+// @Accept      json
+// @Produce     json
+// @Param       input body     id                   path string true "account id"
+// @Param       input body     domain.MovieMainInfo true "Add movie to list, 'id' and 'savedAt' not necessary params"
+// @Success     200   {object} domain.MovieMainInfo
+// @Router      /movies/{id} [put]
 func (h *Handler) updateMovie(w http.ResponseWriter, r *http.Request) {
 	id, err := getIdFromRequest(r)
 	if err != nil {
