@@ -4,13 +4,16 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io/ioutil"
+	"time"
 
 	"net/http"
 	"strconv"
 
 	_ "github.com/BalamutDiana/crud_movie_manager/docs"
 	"github.com/BalamutDiana/crud_movie_manager/internal/domain"
+	cc "github.com/BalamutDiana/custom_cache"
 	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
 	httpSwagger "github.com/swaggo/http-swagger"
@@ -31,15 +34,17 @@ type Movies interface {
 
 type Handler struct {
 	movieService Movies
+	cacheService *cc.Cache
 }
 
 type statusResponse struct {
 	Message string `json:"status"`
 }
 
-func NewHandler(movies Movies) *Handler {
+func NewHandler(movies Movies, cache *cc.Cache) *Handler {
 	return &Handler{
 		movieService: movies,
+		cacheService: cache,
 	}
 }
 
@@ -68,6 +73,7 @@ func (h *Handler) InitRouter() *mux.Router {
 // @Success     200 {object} []domain.Movie
 // @Router      /movies [get]
 func (h *Handler) getMovies(w http.ResponseWriter, r *http.Request) {
+
 	m, err := h.movieService.GetMovies(context.TODO())
 	if err != nil {
 		log.WithFields(log.Fields{
@@ -76,6 +82,12 @@ func (h *Handler) getMovies(w http.ResponseWriter, r *http.Request) {
 		}).Error(err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
+	}
+
+	for _, item := range m {
+		if _, err := h.cacheService.Get(fmt.Sprint(item.ID)); err != nil {
+			h.cacheService.Set(fmt.Sprint(item.ID), item, time.Minute*2)
+		}
 	}
 
 	resp, err := json.Marshal(m)
@@ -97,8 +109,8 @@ func (h *Handler) getMovies(w http.ResponseWriter, r *http.Request) {
 // @Description Get movies by ID
 // @Accept      json
 // @Produce     json
-// @Param       id  path     string true "account id"
-// @Success     200 {object} domain.Movie
+// @Param       id      path     string true "account id"
+// @Success     200     {object} domain.Movie
 // @Router      /movies/{id} [get]
 func (h *Handler) getMovieByID(w http.ResponseWriter, r *http.Request) {
 	id, err := getIdFromRequest(r)
@@ -111,19 +123,23 @@ func (h *Handler) getMovieByID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	movie, err := h.movieService.GetMovieByID(context.TODO(), id)
-	if err != nil {
-		if errors.Is(err, errors.New("Movie not found")) {
-			w.WriteHeader(http.StatusBadRequest)
+	var movie interface{}
+
+	if movie, err = h.cacheService.Get(fmt.Sprint(id)); err != nil {
+		movie, err = h.movieService.GetMovieByID(context.TODO(), id)
+		if err != nil {
+			if errors.Is(err, errors.New("Movie not found")) {
+				w.WriteHeader(http.StatusBadRequest)
+				return
+			}
+
+			log.WithFields(log.Fields{
+				"handler": "getMovieByID",
+				"problem": "service problem",
+			}).Error(err)
+			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
-
-		log.WithFields(log.Fields{
-			"handler": "getMovieByID",
-			"problem": "service problem",
-		}).Error(err)
-		w.WriteHeader(http.StatusInternalServerError)
-		return
 	}
 
 	response, err := json.Marshal(movie)
@@ -145,8 +161,8 @@ func (h *Handler) getMovieByID(w http.ResponseWriter, r *http.Request) {
 // @Description Add new movie
 // @Accept      json
 // @Produce     json
-// @Param       input   body     domain.MovieMainInfo true "Add movie to list, 'id' and 'savedAt' not necessary params"
-// @Success     200,201 {object} domain.MovieMainInfo
+// @Param       input body     domain.MovieMainInfo true "Add movie to list, 'id' and 'savedAt' not necessary params"
+// @Success     200,201      {object}             domain.MovieMainInfo
 // @Router      /movies [post]
 func (h *Handler) insertMovie(w http.ResponseWriter, r *http.Request) {
 	reqBytes, err := ioutil.ReadAll(r.Body)
@@ -169,6 +185,8 @@ func (h *Handler) insertMovie(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
+
+	h.cacheService.Set(fmt.Sprint(movie.ID), movie, time.Minute*2)
 
 	err = h.movieService.InsertMovie(context.TODO(), movie)
 	if err != nil {
@@ -202,8 +220,16 @@ func (h *Handler) deleteMovie(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = h.movieService.DeleteMovie(context.TODO(), id)
-	if err != nil {
+	if err = h.cacheService.Delete(fmt.Sprint(id)); err != nil {
+		log.WithFields(log.Fields{
+			"handler": "deleteMovie",
+			"problem": "caching problem",
+		}).Error(err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	if err = h.movieService.DeleteMovie(context.TODO(), id); err != nil {
 		log.WithFields(log.Fields{
 			"handler": "deleteMovie",
 			"problem": "service problem",
@@ -253,6 +279,8 @@ func (h *Handler) updateMovie(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
+
+	h.cacheService.Set(fmt.Sprint(id), upd, time.Minute*2)
 
 	err = h.movieService.UpdateMovie(context.TODO(), id, upd)
 	if err != nil {

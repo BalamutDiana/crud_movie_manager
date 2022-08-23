@@ -7,6 +7,7 @@ require github.com/lib/pq v1.10.6
 require github.com/gorilla/mux v1.8.0
 
 require (
+	github.com/BalamutDiana/custom_cache v0.0.0-20220807095647-94197cfa6010 // indirect
 	github.com/KyleBanks/depth v1.2.1 // indirect
 	github.com/PuerkitoBio/purell v1.2.0 // indirect
 	github.com/PuerkitoBio/urlesc v0.0.0-20170810143723-de5bf2ad4578 // indirect

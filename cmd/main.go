@@ -10,6 +10,7 @@ import (
 	repo "github.com/BalamutDiana/crud_movie_manager/internal/repository"
 	rest "github.com/BalamutDiana/crud_movie_manager/internal/transport"
 	"github.com/BalamutDiana/crud_movie_manager/pkg/database"
+	"github.com/BalamutDiana/custom_cache"
 	"github.com/sirupsen/logrus"
 
 	_ "github.com/BalamutDiana/crud_movie_manager/docs"
@@ -61,7 +62,8 @@ func main() {
 	defer db.Close()
 
 	booksRepo := repo.NewMovies(db)
-	handler := rest.NewHandler(booksRepo)
+	cache := custom_cache.New()
+	handler := rest.NewHandler(booksRepo, cache)
 
 	srv := &http.Server{
 		Addr:    fmt.Sprintf(":%d", cfg.Server.Port),
