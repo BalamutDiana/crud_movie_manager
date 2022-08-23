@@ -97,8 +97,8 @@ func (h *Handler) getMovies(w http.ResponseWriter, r *http.Request) {
 // @Description Get movies by ID
 // @Accept      json
 // @Produce     json
-// @Param       id      path     string true "account id"
-// @Success     200     {object} domain.Movie
+// @Param       id  path     string true "account id"
+// @Success     200 {object} domain.Movie
 // @Router      /movies/{id} [get]
 func (h *Handler) getMovieByID(w http.ResponseWriter, r *http.Request) {
 	id, err := getIdFromRequest(r)
@@ -145,8 +145,8 @@ func (h *Handler) getMovieByID(w http.ResponseWriter, r *http.Request) {
 // @Description Add new movie
 // @Accept      json
 // @Produce     json
-// @Param       input body     domain.MovieMainInfo true "Add movie to list, 'id' and 'savedAt' not necessary params"
-// @Success     200,201      {object}             domain.MovieMainInfo
+// @Param       input   body     domain.MovieMainInfo true "Add movie to list, 'id' and 'savedAt' not necessary params"
+// @Success     200,201 {object} domain.MovieMainInfo
 // @Router      /movies [post]
 func (h *Handler) insertMovie(w http.ResponseWriter, r *http.Request) {
 	reqBytes, err := ioutil.ReadAll(r.Body)
