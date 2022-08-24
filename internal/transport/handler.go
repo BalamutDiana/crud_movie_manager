@@ -25,9 +25,9 @@ const (
 )
 
 type Movies interface {
-	InsertMovie(ctx context.Context, movie domain.Movie) error
+	Create(ctx context.Context, movie domain.Movie) error
 	GetMovieByID(ctx context.Context, id int64) (domain.Movie, error)
-	GetMovies(ctx context.Context) ([]domain.Movie, error)
+	List(ctx context.Context) ([]domain.Movie, error)
 	DeleteMovie(ctx context.Context, id int64) error
 	UpdateMovie(ctx context.Context, id int64, newMovie domain.Movie) error
 }
@@ -74,7 +74,7 @@ func (h *Handler) InitRouter() *mux.Router {
 // @Router      /movies [get]
 func (h *Handler) getMovies(w http.ResponseWriter, r *http.Request) {
 
-	m, err := h.movieService.GetMovies(context.TODO())
+	m, err := h.movieService.List(r.Context())
 	if err != nil {
 		log.WithFields(log.Fields{
 			"handler": "getMovies",
@@ -126,7 +126,7 @@ func (h *Handler) getMovieByID(w http.ResponseWriter, r *http.Request) {
 	var movie interface{}
 
 	if movie, err = h.cacheService.Get(fmt.Sprint(id)); err != nil {
-		movie, err = h.movieService.GetMovieByID(context.TODO(), id)
+		movie, err = h.movieService.GetMovieByID(r.Context(), id)
 		if err != nil {
 			if errors.Is(err, errors.New("Movie not found")) {
 				w.WriteHeader(http.StatusBadRequest)
@@ -188,7 +188,7 @@ func (h *Handler) insertMovie(w http.ResponseWriter, r *http.Request) {
 
 	h.cacheService.Set(fmt.Sprint(movie.ID), movie, time.Minute*2)
 
-	err = h.movieService.InsertMovie(context.TODO(), movie)
+	err = h.movieService.Create(r.Context(), movie)
 	if err != nil {
 		log.WithFields(log.Fields{
 			"handler": "insertMovie",
@@ -229,7 +229,7 @@ func (h *Handler) deleteMovie(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err = h.movieService.DeleteMovie(context.TODO(), id); err != nil {
+	if err = h.movieService.DeleteMovie(r.Context(), id); err != nil {
 		log.WithFields(log.Fields{
 			"handler": "deleteMovie",
 			"problem": "service problem",
@@ -282,7 +282,7 @@ func (h *Handler) updateMovie(w http.ResponseWriter, r *http.Request) {
 
 	h.cacheService.Set(fmt.Sprint(id), upd, time.Minute*2)
 
-	err = h.movieService.UpdateMovie(context.TODO(), id, upd)
+	err = h.movieService.UpdateMovie(r.Context(), id, upd)
 	if err != nil {
 		log.WithFields(log.Fields{
 			"handler": "updateMovie",

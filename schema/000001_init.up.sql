@@ -1,4 +1,4 @@
-create table movies (
+CREATE TABLE movies (
 id serial not null unique,
 title varchar(255) not null,
 release varchar(255) not null,

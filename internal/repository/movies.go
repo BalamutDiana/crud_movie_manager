@@ -15,8 +15,8 @@ func NewMovies(db *sql.DB) *Movies {
 	return &Movies{db}
 }
 
-func (m *Movies) GetMovies(ctx context.Context) ([]domain.Movie, error) {
-	rows, err := m.db.Query("select * from movies")
+func (m *Movies) List(ctx context.Context) ([]domain.Movie, error) {
+	rows, err := m.db.QueryContext(ctx, "select * from movies")
 	if err != nil {
 		return nil, err
 	}
@@ -42,26 +42,26 @@ func (m *Movies) GetMovies(ctx context.Context) ([]domain.Movie, error) {
 func (m *Movies) GetMovieByID(ctx context.Context, id int64) (domain.Movie, error) {
 	var movie domain.Movie
 
-	err := m.db.QueryRow("select * from movies where id = $1", id).
+	err := m.db.QueryRowContext(ctx, "select * from movies where id = $1", id).
 		Scan(&movie.ID, &movie.Title, &movie.Release, &movie.StreamingService, &movie.SavedAt)
 
 	return movie, err
 }
 
-func (m *Movies) InsertMovie(ctx context.Context, movie domain.Movie) error {
-	_, err := m.db.Exec("insert into movies (title, release, streaming_service) values ($1, $2, $3)",
+func (m *Movies) Create(ctx context.Context, movie domain.Movie) error {
+	_, err := m.db.ExecContext(ctx, "insert into movies (title, release, streaming_service) values ($1, $2, $3)",
 		movie.Title, movie.Release, movie.StreamingService)
 
 	return err
 }
 
 func (m *Movies) DeleteMovie(ctx context.Context, id int64) error {
-	_, err := m.db.Exec("delete from movies where id = $1", id)
+	_, err := m.db.ExecContext(ctx, "delete from movies where id = $1", id)
 	return err
 }
 
 func (m *Movies) UpdateMovie(ctx context.Context, id int64, newMovie domain.Movie) error {
-	_, err := m.db.Exec("update movies set title=$1, release = $2, streaming_service = $3 where id = $4",
+	_, err := m.db.ExecContext(ctx, "update movies set title=$1, release = $2, streaming_service = $3 where id = $4",
 		newMovie.Title, newMovie.Release, newMovie.StreamingService, id)
 	return err
 }
