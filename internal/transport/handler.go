@@ -11,6 +11,7 @@ import (
 
 	_ "github.com/BalamutDiana/crud_movie_manager/docs"
 	"github.com/BalamutDiana/crud_movie_manager/internal/domain"
+
 	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
 	httpSwagger "github.com/swaggo/http-swagger"
@@ -68,6 +69,7 @@ func (h *Handler) InitRouter() *mux.Router {
 // @Success     200 {object} []domain.Movie
 // @Router      /movies [get]
 func (h *Handler) getMovies(w http.ResponseWriter, r *http.Request) {
+
 	m, err := h.movieService.GetMovies(context.TODO())
 	if err != nil {
 		log.WithFields(log.Fields{
@@ -111,7 +113,9 @@ func (h *Handler) getMovieByID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	movie, err := h.movieService.GetMovieByID(context.TODO(), id)
+	var movie interface{}
+
+	movie, err = h.movieService.GetMovieByID(context.TODO(), id)
 	if err != nil {
 		if errors.Is(err, errors.New("Movie not found")) {
 			w.WriteHeader(http.StatusBadRequest)
@@ -202,8 +206,7 @@ func (h *Handler) deleteMovie(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = h.movieService.DeleteMovie(context.TODO(), id)
-	if err != nil {
+	if err = h.movieService.DeleteMovie(context.TODO(), id); err != nil {
 		log.WithFields(log.Fields{
 			"handler": "deleteMovie",
 			"problem": "service problem",
