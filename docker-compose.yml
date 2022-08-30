@@ -8,15 +8,12 @@ services:
       - 8080:8080
     depends_on:
       - db
-    environment:
-      - DB_PASSWORD=1marvin2mode3
 
   db:
+    container_name: postgres
     restart: always
     image: postgres:latest
     volumes:
       - ./.database/postgres/data:/var/lib/postgresql/data
-    environment:
-      - POSTGRES_PASSWORD=1marvin2mode3
     ports:
       - 5432:5432

@@ -5,24 +5,37 @@ import (
 	"encoding/json"
 	"errors"
 	"io/ioutil"
-	"log"
+
 	"net/http"
 	"strconv"
 
+	_ "github.com/BalamutDiana/crud_movie_manager/docs"
 	"github.com/BalamutDiana/crud_movie_manager/internal/domain"
+
 	"github.com/gorilla/mux"
+	log "github.com/sirupsen/logrus"
+	httpSwagger "github.com/swaggo/http-swagger"
+)
+
+const (
+	// JSONDocumentationPath is the path of the swagger documentation in json format.
+	JSONDocumentationPath = "/documentation/json"
 )
 
 type Movies interface {
-	InsertMovie(ctx context.Context, movie domain.Movie) error
+	Create(ctx context.Context, movie domain.Movie) error
 	GetMovieByID(ctx context.Context, id int64) (domain.Movie, error)
-	GetMovies(ctx context.Context) ([]domain.Movie, error)
+	List(ctx context.Context) ([]domain.Movie, error)
 	DeleteMovie(ctx context.Context, id int64) error
 	UpdateMovie(ctx context.Context, id int64, newMovie domain.Movie) error
 }
 
 type Handler struct {
 	movieService Movies
+}
+
+type statusResponse struct {
+	Message string `json:"status"`
 }
 
 func NewHandler(movies Movies) *Handler {
@@ -34,6 +47,7 @@ func NewHandler(movies Movies) *Handler {
 func (h *Handler) InitRouter() *mux.Router {
 	r := mux.NewRouter()
 	r.Use(loggingMiddleware)
+	r.PathPrefix("/swagger/").Handler(httpSwagger.WrapHandler)
 
 	books := r.PathPrefix("/movies").Subrouter()
 	{
@@ -47,24 +61,31 @@ func (h *Handler) InitRouter() *mux.Router {
 	return r
 }
 
-func loggingMiddleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		log.Printf("[%s] %s\n", r.Method, r.URL)
-		next.ServeHTTP(w, r)
-	})
-}
-
+// GetMovies godoc
+// @Summary     Get movies
+// @Description Get all movies list
+// @Accept      json
+// @Produce     json
+// @Success     200 {object} []domain.Movie
+// @Router      /movies [get]
 func (h *Handler) getMovies(w http.ResponseWriter, r *http.Request) {
-	m, err := h.movieService.GetMovies(context.TODO())
+
+	m, err := h.movieService.List(r.Context())
 	if err != nil {
-		log.Println("getMovies() error:", err)
+		log.WithFields(log.Fields{
+			"handler": "getMovies",
+			"problem": "service problem",
+		}).Error(err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
 	resp, err := json.Marshal(m)
 	if err != nil {
-		log.Println("getMovies() error:", err)
+		log.WithFields(log.Fields{
+			"handler": "getMovies",
+			"problem": "marshaling error",
+		}).Error(err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -73,29 +94,48 @@ func (h *Handler) getMovies(w http.ResponseWriter, r *http.Request) {
 	w.Write(resp)
 }
 
+// GetMoviesByID godoc
+// @Summary     Get movies by ID
+// @Description Get movies by ID
+// @Accept      json
+// @Produce     json
+// @Param       id      path     string true "account id"
+// @Success     200     {object} domain.Movie
+// @Router      /movies/{id} [get]
 func (h *Handler) getMovieByID(w http.ResponseWriter, r *http.Request) {
 	id, err := getIdFromRequest(r)
 	if err != nil {
-		log.Println("getMovieByID() error:", err)
+		log.WithFields(log.Fields{
+			"handler": "getMovieByID",
+			"problem": "getIdFromRequest problem",
+		}).Error(err)
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
-	movie, err := h.movieService.GetMovieByID(context.TODO(), id)
+	var movie interface{}
+
+	movie, err = h.movieService.GetMovieByID(r.Context(), id)
 	if err != nil {
 		if errors.Is(err, errors.New("Movie not found")) {
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
 
-		log.Println("getMoviesByID() error:", err)
+		log.WithFields(log.Fields{
+			"handler": "getMovieByID",
+			"problem": "service problem",
+		}).Error(err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
 	response, err := json.Marshal(movie)
 	if err != nil {
-		log.Println("getMoviesByID() error:", err)
+		log.WithFields(log.Fields{
+			"handler": "getMovieByID",
+			"problem": "marshaling error",
+		}).Error(err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -104,10 +144,21 @@ func (h *Handler) getMovieByID(w http.ResponseWriter, r *http.Request) {
 	w.Write(response)
 }
 
+// InsertMovie doc
+// @Summary     Add new movie
+// @Description Add new movie
+// @Accept      json
+// @Produce     json
+// @Param       input body     domain.MovieMainInfo true "Add movie to list, 'id' and 'savedAt' not necessary params"
+// @Success     200,201      {object}             domain.MovieMainInfo
+// @Router      /movies [post]
 func (h *Handler) insertMovie(w http.ResponseWriter, r *http.Request) {
 	reqBytes, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		log.Println("insertMovie() error:", err)
+		log.WithFields(log.Fields{
+			"handler": "insertMovie",
+			"problem": "reading request body",
+		}).Error(err)
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
@@ -115,14 +166,21 @@ func (h *Handler) insertMovie(w http.ResponseWriter, r *http.Request) {
 	var movie domain.Movie
 
 	if err = json.Unmarshal(reqBytes, &movie); err != nil {
-		log.Println("unmarshaling error:", err)
+		log.WithFields(log.Fields{
+			"handler": "insertMovie",
+			"problem": "unmarchaling request",
+		}).Error(err)
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
-	err = h.movieService.InsertMovie(context.TODO(), movie)
+	err = h.movieService.Create(r.Context(), movie)
+
 	if err != nil {
-		log.Println("createMovie() error:", err)
+		log.WithFields(log.Fields{
+			"handler": "insertMovie",
+			"problem": "service problem",
+		}).Error(err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -130,48 +188,83 @@ func (h *Handler) insertMovie(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusCreated)
 }
 
+// DeleteMovie doc
+// @Summary     DeleteMovie from list
+// @Description DeleteMovie from list
+// @Accept      json
+// @Produce     json
+// @Param       id  body     id path string true "account id"
+// @Success     200 {object} statusResponse
+// @Router      /movies/{id} [delete]
 func (h *Handler) deleteMovie(w http.ResponseWriter, r *http.Request) {
 	id, err := getIdFromRequest(r)
 	if err != nil {
-		log.Println("deleteMovie() error:", err)
+		log.WithFields(log.Fields{
+			"handler": "deleteMovie",
+			"problem": "getIdFromRequest problem",
+		}).Error(err)
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
-	err = h.movieService.DeleteMovie(context.TODO(), id)
-	if err != nil {
-		log.Println("deleteMovie() error:", err)
+	if err = h.movieService.DeleteMovie(r.Context(), id); err != nil { 
+		log.WithFields(log.Fields{
+			"handler": "deleteMovie",
+			"problem": "service problem",
+		}).Error(err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 	w.WriteHeader(http.StatusOK)
 }
 
+// UpdateMovie doc
+// @Summary     Update movie info
+// @Description Update movie info
+// @Accept      json
+// @Produce     json
+// @Param       input body     id                   path string true "account id"
+// @Param       input body     domain.MovieMainInfo true "Add movie to list, 'id' and 'savedAt' not necessary params"
+// @Success     200   {object} domain.MovieMainInfo
+// @Router      /movies/{id} [put]
 func (h *Handler) updateMovie(w http.ResponseWriter, r *http.Request) {
 	id, err := getIdFromRequest(r)
 	if err != nil {
-		log.Println("updateMovie() error:", err)
+		log.WithFields(log.Fields{
+			"handler": "updateMovie",
+			"problem": "getIdFromRequest problem",
+		}).Error(err)
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
 	reqBytes, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		log.Println("updateMovie() error:", err)
+		log.WithFields(log.Fields{
+			"handler": "updateMovie",
+			"problem": "reading request body",
+		}).Error(err)
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
 	var upd domain.Movie
 	if err = json.Unmarshal(reqBytes, &upd); err != nil {
-		log.Println("unmarshaling error:", err)
+		log.WithFields(log.Fields{
+			"handler": "updateMovie",
+			"problem": "unmarshaling error",
+		}).Error(err)
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
-	err = h.movieService.UpdateMovie(context.TODO(), id, upd)
+	err = h.movieService.UpdateMovie(r.Context(), id, upd)
+
 	if err != nil {
-		log.Println("UpdateMovie() error:", err)
+		log.WithFields(log.Fields{
+			"handler": "updateMovie",
+			"problem": "service problem",
+		}).Error(err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}

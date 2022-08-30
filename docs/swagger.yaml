@@ -1,0 +1,136 @@
+basePath: /
+definitions:
+  domain.Movie:
+    properties:
+      id:
+        type: integer
+      release:
+        type: string
+      savedAt:
+        type: string
+      streamingService:
+        type: string
+      title:
+        type: string
+    type: object
+  domain.MovieMainInfo:
+    properties:
+      release:
+        type: string
+      streamingService:
+        type: string
+      title:
+        type: string
+    type: object
+  transport.statusResponse:
+    properties:
+      status:
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact: {}
+  description: API server for saving movies
+  title: CRUD movie manager API
+  version: "1.0"
+paths:
+  /movies:
+    get:
+      consumes:
+      - application/json
+      description: Get all movies list
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/domain.Movie'
+            type: array
+      summary: Get movies
+    post:
+      consumes:
+      - application/json
+      description: Add new movie
+      parameters:
+      - description: Add movie to list, 'id' and 'savedAt' not necessary params
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/domain.MovieMainInfo'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/domain.MovieMainInfo'
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/domain.MovieMainInfo'
+      summary: Add new movie
+  /movies/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: DeleteMovie from list
+      parameters:
+      - description: account id
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/transport.statusResponse'
+      summary: DeleteMovie from list
+    get:
+      consumes:
+      - application/json
+      description: Get movies by ID
+      parameters:
+      - description: account id
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/domain.Movie'
+      summary: Get movies by ID
+    put:
+      consumes:
+      - application/json
+      description: Update movie info
+      parameters:
+      - description: account id
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Add movie to list, 'id' and 'savedAt' not necessary params
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/domain.MovieMainInfo'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/domain.MovieMainInfo'
+      summary: Update movie info
+swagger: "2.0"
