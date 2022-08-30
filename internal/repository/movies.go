@@ -22,8 +22,8 @@ func NewMovies(database *sql.DB, cache *cc.Cache) *Movies {
 	}
 }
 
-func (m *Movies) GetMovies(ctx context.Context) ([]domain.Movie, error) {
-	rows, err := m.db.Query("select * from movies")
+func (m *Movies) List(ctx context.Context) ([]domain.Movie, error) {
+	rows, err := m.db.QueryContext(ctx, "select * from movies")
 	if err != nil {
 		return nil, err
 	}
@@ -59,38 +59,36 @@ func (m *Movies) GetMovieByID(ctx context.Context, id int64) (domain.Movie, erro
 
 	var movie domain.Movie
 
-	err := m.db.QueryRow("select * from movies where id = $1", id).
+	err := m.db.QueryRowContext(ctx, "select * from movies where id = $1", id).
 		Scan(&movie.ID, &movie.Title, &movie.Release, &movie.StreamingService, &movie.SavedAt)
 
 	return movie, err
 }
 
-func (m *Movies) InsertMovie(ctx context.Context, movie domain.Movie) error {
-	if _, err := m.db.Exec("insert into movies (title, release, streaming_service) values ($1, $2, $3)",
-		movie.Title, movie.Release, movie.StreamingService); err != nil {
-		return err
-	}
+func (m *Movies) Create(ctx context.Context, movie domain.Movie) error {
+	_, err := m.db.ExecContext(ctx, "insert into movies (title, release, streaming_service) values ($1, $2, $3)",
+		movie.Title, movie.Release, movie.StreamingService)
 
 	m.cache.Set(fmt.Sprint(movie.ID), movie, time.Minute*2)
 	return nil
 }
 
 func (m *Movies) DeleteMovie(ctx context.Context, id int64) error {
-	if _, err := m.db.Exec("delete from movies where id = $1", id); err != nil {
-		return err
-	}
-	if err := m.cache.Delete(fmt.Sprint(id)); err != nil {
-		return err
-	}
+	_, err := m.db.ExecContext(ctx, "delete from movies where id = $1", id)
+	return err
+}
+	m.cache.Set(fmt.Sprint(id), newMovie, time.Minute*2)
 	return nil
 }
 
 func (m *Movies) UpdateMovie(ctx context.Context, id int64, newMovie domain.Movie) error {
-	if _, err := m.db.Exec("update movies set title=$1, release = $2, streaming_service = $3 where id = $4",
+	if _, err := m.db.ExecContext(ctx, "update movies set title=$1, release = $2, streaming_service = $3 where id = $4",
 		newMovie.Title, newMovie.Release, newMovie.StreamingService, id); err != nil {
+	  return err
+  }
+  
+	if err := m.cache.Delete(fmt.Sprint(id)); err != nil {
 		return err
 	}
-
-	m.cache.Set(fmt.Sprint(id), newMovie, time.Minute*2)
 	return nil
 }

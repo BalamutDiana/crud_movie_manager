@@ -17,11 +17,6 @@ import (
 	_ "github.com/lib/pq"
 )
 
-const (
-	CONFIG_DIR  = "configs"
-	CONFIG_FILE = "main"
-)
-
 func init() {
 	logrus.SetFormatter(&logrus.JSONFormatter{})
 	logrus.SetOutput(os.Stdout)
@@ -36,7 +31,7 @@ func init() {
 // @BasePath /
 
 func main() {
-	cfg, err := config.New(CONFIG_DIR, CONFIG_FILE)
+	cfg, err := config.New("configs", "config")
 	if err != nil {
 		logrus.WithFields(logrus.Fields{
 			"method":  "config.New",
