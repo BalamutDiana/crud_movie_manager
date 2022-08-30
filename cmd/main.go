@@ -1,11 +1,12 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net/http"
-	"os"
 	"time"
 
+	"github.com/BalamutDiana/crud_movie_manager/internal/config"
 	repo "github.com/BalamutDiana/crud_movie_manager/internal/repository"
 	rest "github.com/BalamutDiana/crud_movie_manager/internal/transport"
 	"github.com/BalamutDiana/crud_movie_manager/pkg/database"
@@ -13,16 +14,24 @@ import (
 	_ "github.com/lib/pq"
 )
 
-func main() {
+const (
+	CONFIG_DIR  = "configs"
+	CONFIG_FILE = "main"
+)
 
-	password := os.Getenv("DB_PASSWORD")
+func main() {
+	cfg, err := config.New(CONFIG_DIR, CONFIG_FILE)
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	db, err := database.NewPostgresConnection(database.ConnectionInfo{
-		Host:     "host.docker.internal",
-		Port:     5432,
-		Username: "postgres",
-		DBName:   "postgres",
-		SSLMode:  "disable",
-		Password: password,
+		Host:     cfg.DB.Host,
+		Port:     cfg.DB.Port,
+		Username: cfg.DB.Username,
+		DBName:   cfg.DB.Name,
+		SSLMode:  cfg.DB.SSLMode,
+		Password: cfg.DB.Password,
 	})
 	if err != nil {
 		log.Fatal(err)
@@ -33,7 +42,7 @@ func main() {
 	handler := rest.NewHandler(booksRepo)
 
 	srv := &http.Server{
-		Addr:    ":8080",
+		Addr:    fmt.Sprintf(":%d", cfg.Server.Port),
 		Handler: handler.InitRouter(),
 	}
 
