@@ -4,16 +4,14 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io/ioutil"
-	"time"
 
 	"net/http"
 	"strconv"
 
 	_ "github.com/BalamutDiana/crud_movie_manager/docs"
 	"github.com/BalamutDiana/crud_movie_manager/internal/domain"
-	cc "github.com/BalamutDiana/custom_cache"
+
 	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
 	httpSwagger "github.com/swaggo/http-swagger"
@@ -34,17 +32,15 @@ type Movies interface {
 
 type Handler struct {
 	movieService Movies
-	cacheService *cc.Cache
 }
 
 type statusResponse struct {
 	Message string `json:"status"`
 }
 
-func NewHandler(movies Movies, cache *cc.Cache) *Handler {
+func NewHandler(movies Movies) *Handler {
 	return &Handler{
 		movieService: movies,
-		cacheService: cache,
 	}
 }
 
@@ -84,12 +80,6 @@ func (h *Handler) getMovies(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	for _, item := range m {
-		if _, err := h.cacheService.Get(fmt.Sprint(item.ID)); err != nil {
-			h.cacheService.Set(fmt.Sprint(item.ID), item, time.Minute*2)
-		}
-	}
-
 	resp, err := json.Marshal(m)
 	if err != nil {
 		log.WithFields(log.Fields{
@@ -125,21 +115,19 @@ func (h *Handler) getMovieByID(w http.ResponseWriter, r *http.Request) {
 
 	var movie interface{}
 
-	if movie, err = h.cacheService.Get(fmt.Sprint(id)); err != nil {
-		movie, err = h.movieService.GetMovieByID(r.Context(), id)
-		if err != nil {
-			if errors.Is(err, errors.New("Movie not found")) {
-				w.WriteHeader(http.StatusBadRequest)
-				return
-			}
-
-			log.WithFields(log.Fields{
-				"handler": "getMovieByID",
-				"problem": "service problem",
-			}).Error(err)
-			w.WriteHeader(http.StatusInternalServerError)
+	movie, err = h.movieService.GetMovieByID(r.Context(), id)
+	if err != nil {
+		if errors.Is(err, errors.New("Movie not found")) {
+			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
+
+		log.WithFields(log.Fields{
+			"handler": "getMovieByID",
+			"problem": "service problem",
+		}).Error(err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
 	}
 
 	response, err := json.Marshal(movie)
@@ -186,9 +174,8 @@ func (h *Handler) insertMovie(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.cacheService.Set(fmt.Sprint(movie.ID), movie, time.Minute*2)
-
 	err = h.movieService.Create(r.Context(), movie)
+
 	if err != nil {
 		log.WithFields(log.Fields{
 			"handler": "insertMovie",
@@ -220,16 +207,7 @@ func (h *Handler) deleteMovie(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err = h.cacheService.Delete(fmt.Sprint(id)); err != nil {
-		log.WithFields(log.Fields{
-			"handler": "deleteMovie",
-			"problem": "caching problem",
-		}).Error(err)
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-
-	if err = h.movieService.DeleteMovie(r.Context(), id); err != nil {
+	if err = h.movieService.DeleteMovie(r.Context(), id); err != nil { 
 		log.WithFields(log.Fields{
 			"handler": "deleteMovie",
 			"problem": "service problem",
@@ -280,9 +258,8 @@ func (h *Handler) updateMovie(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.cacheService.Set(fmt.Sprint(id), upd, time.Minute*2)
-
 	err = h.movieService.UpdateMovie(r.Context(), id, upd)
+
 	if err != nil {
 		log.WithFields(log.Fields{
 			"handler": "updateMovie",

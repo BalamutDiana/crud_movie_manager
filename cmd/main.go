@@ -56,9 +56,9 @@ func main() {
 	}
 	defer db.Close()
 
-	booksRepo := repo.NewMovies(db)
 	cache := custom_cache.New()
-	handler := rest.NewHandler(booksRepo, cache)
+	booksRepo := repo.NewMovies(db, cache)
+	handler := rest.NewHandler(booksRepo)
 
 	srv := &http.Server{
 		Addr:    fmt.Sprintf(":%d", cfg.Server.Port),
