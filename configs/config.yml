@@ -7,3 +7,5 @@ db:
   name: "postgres"
   sslmode: "disable"
   password: "1marvin2mode3"
+auth:
+  token_ttl: 15m

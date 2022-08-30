@@ -5,3 +5,11 @@ release varchar(255) not null,
 streaming_service varchar(255) not null,
 saved_at timestamp not null default now()
 );
+
+CREATE TABLE users (
+id serial not null unique,
+name varchar(255) not null,
+email varchar(255) not null unique,
+password varchar(255) not null,
+registered_at timestamp not null default now()
+);

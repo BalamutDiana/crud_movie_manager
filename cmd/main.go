@@ -2,14 +2,15 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 
 	"github.com/BalamutDiana/crud_movie_manager/internal/config"
 	repo "github.com/BalamutDiana/crud_movie_manager/internal/repository"
+	"github.com/BalamutDiana/crud_movie_manager/internal/service"
 	rest "github.com/BalamutDiana/crud_movie_manager/internal/transport"
 	"github.com/BalamutDiana/crud_movie_manager/pkg/database"
+	"github.com/BalamutDiana/crud_movie_manager/pkg/hash"
 	"github.com/BalamutDiana/custom_cache"
 	"github.com/sirupsen/logrus"
 
@@ -48,7 +49,6 @@ func main() {
 		Password: cfg.DB.Password,
 	})
 	if err != nil {
-		log.Println(cfg.DB.Host, cfg.DB.Username, cfg.DB.Name, cfg.DB.Port, cfg.DB.Password)
 		logrus.WithFields(logrus.Fields{
 			"method":  "database.NewPostgresConnection",
 			"problem": "creating connection",
@@ -56,9 +56,14 @@ func main() {
 	}
 	defer db.Close()
 
+	hasher := hash.NewSHA1Hasher("salt")
+
 	cache := custom_cache.New()
 	booksRepo := repo.NewMovies(db, cache)
-	handler := rest.NewHandler(booksRepo)
+	usersRepo := repo.NewUsers(db)
+	usersService := service.NewUsers(usersRepo, hasher, []byte("dFscwEtgdS"), cfg.Auth.TokenTTL)
+
+	handler := rest.NewHandler(booksRepo, usersService)
 
 	srv := &http.Server{
 		Addr:    fmt.Sprintf(":%d", cfg.Server.Port),
