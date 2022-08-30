@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 
@@ -11,6 +12,7 @@ import (
 	"github.com/BalamutDiana/crud_movie_manager/pkg/database"
 	"github.com/sirupsen/logrus"
 
+	_ "github.com/BalamutDiana/crud_movie_manager/docs"
 	_ "github.com/lib/pq"
 )
 
@@ -24,6 +26,13 @@ func init() {
 	logrus.SetOutput(os.Stdout)
 	logrus.SetLevel(logrus.InfoLevel)
 }
+
+// @title       CRUD movie manager API
+// @version     1.0
+// @description API server for saving movies
+
+// @host     localhost:8080
+// @BasePath /
 
 func main() {
 	cfg, err := config.New(CONFIG_DIR, CONFIG_FILE)
@@ -43,6 +52,7 @@ func main() {
 		Password: cfg.DB.Password,
 	})
 	if err != nil {
+		log.Println(cfg.DB.Host, cfg.DB.Username, cfg.DB.Name, cfg.DB.Port, cfg.DB.Password)
 		logrus.WithFields(logrus.Fields{
 			"method":  "database.NewPostgresConnection",
 			"problem": "creating connection",
