@@ -2,14 +2,14 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"net/http"
-	"time"
+	"os"
 
 	"github.com/BalamutDiana/crud_movie_manager/internal/config"
 	repo "github.com/BalamutDiana/crud_movie_manager/internal/repository"
 	rest "github.com/BalamutDiana/crud_movie_manager/internal/transport"
 	"github.com/BalamutDiana/crud_movie_manager/pkg/database"
+	"github.com/sirupsen/logrus"
 
 	_ "github.com/lib/pq"
 )
@@ -19,10 +19,19 @@ const (
 	CONFIG_FILE = "main"
 )
 
+func init() {
+	logrus.SetFormatter(&logrus.JSONFormatter{})
+	logrus.SetOutput(os.Stdout)
+	logrus.SetLevel(logrus.InfoLevel)
+}
+
 func main() {
 	cfg, err := config.New(CONFIG_DIR, CONFIG_FILE)
 	if err != nil {
-		log.Fatal(err)
+		logrus.WithFields(logrus.Fields{
+			"method":  "config.New",
+			"problem": "creating config",
+		}).Fatal(err)
 	}
 
 	db, err := database.NewPostgresConnection(database.ConnectionInfo{
@@ -34,7 +43,10 @@ func main() {
 		Password: cfg.DB.Password,
 	})
 	if err != nil {
-		log.Fatal(err)
+		logrus.WithFields(logrus.Fields{
+			"method":  "database.NewPostgresConnection",
+			"problem": "creating connection",
+		}).Fatal(err)
 	}
 	defer db.Close()
 
@@ -46,9 +58,12 @@ func main() {
 		Handler: handler.InitRouter(),
 	}
 
-	log.Println("SERVER STARTED AT", time.Now().Format(time.RFC3339))
+	logrus.Info("SERVER STARTED")
 
 	if err := srv.ListenAndServe(); err != nil {
-		log.Fatal(err)
+		logrus.WithFields(logrus.Fields{
+			"method":  "srv.ListenAndServe",
+			"problem": "http server problem",
+		}).Fatal(err)
 	}
 }
