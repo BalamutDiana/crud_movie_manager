@@ -66,29 +66,30 @@ func (m *Movies) GetMovieByID(ctx context.Context, id int64) (domain.Movie, erro
 }
 
 func (m *Movies) Create(ctx context.Context, movie domain.Movie) error {
-	_, err := m.db.ExecContext(ctx, "insert into movies (title, release, streaming_service) values ($1, $2, $3)",
-		movie.Title, movie.Release, movie.StreamingService)
+	if _, err := m.db.ExecContext(ctx, "insert into movies (title, release, streaming_service) values ($1, $2, $3)",
+		movie.Title, movie.Release, movie.StreamingService); err != nil {
+		return err
+	}
 
 	m.cache.Set(fmt.Sprint(movie.ID), movie, time.Minute*2)
 	return nil
 }
 
 func (m *Movies) DeleteMovie(ctx context.Context, id int64) error {
-	_, err := m.db.ExecContext(ctx, "delete from movies where id = $1", id)
-	return err
-}
-	m.cache.Set(fmt.Sprint(id), newMovie, time.Minute*2)
+	if _, err := m.db.ExecContext(ctx, "delete from movies where id = $1", id); err != nil {
+		return err
+	}
+	if err := m.cache.Delete(fmt.Sprint(id)); err != nil {
+		return err
+	}
 	return nil
 }
 
 func (m *Movies) UpdateMovie(ctx context.Context, id int64, newMovie domain.Movie) error {
 	if _, err := m.db.ExecContext(ctx, "update movies set title=$1, release = $2, streaming_service = $3 where id = $4",
 		newMovie.Title, newMovie.Release, newMovie.StreamingService, id); err != nil {
-	  return err
-  }
-  
-	if err := m.cache.Delete(fmt.Sprint(id)); err != nil {
 		return err
 	}
+	m.cache.Set(fmt.Sprint(id), newMovie, time.Minute*2)
 	return nil
 }
