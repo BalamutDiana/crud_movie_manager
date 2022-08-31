@@ -61,7 +61,8 @@ func main() {
 	cache := custom_cache.New()
 	booksRepo := repo.NewMovies(db, cache)
 	usersRepo := repo.NewUsers(db)
-	usersService := service.NewUsers(usersRepo, hasher, []byte("dFscwEtgdS"), cfg.Auth.TokenTTL)
+	tokensRepo := repo.NewTokens(db)
+	usersService := service.NewUsers(usersRepo, tokensRepo, hasher, []byte("dFscwEtgdS"))
 
 	handler := rest.NewHandler(booksRepo, usersService)
 
