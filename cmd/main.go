@@ -9,6 +9,7 @@ import (
 	repo "github.com/BalamutDiana/crud_movie_manager/internal/repository"
 	"github.com/BalamutDiana/crud_movie_manager/internal/service"
 	rest "github.com/BalamutDiana/crud_movie_manager/internal/transport"
+	amqp_client "github.com/BalamutDiana/crud_movie_manager/internal/transport/amqp"
 	"github.com/BalamutDiana/crud_movie_manager/pkg/database"
 	"github.com/BalamutDiana/crud_movie_manager/pkg/hash"
 	"github.com/BalamutDiana/custom_cache"
@@ -62,7 +63,17 @@ func main() {
 	booksRepo := repo.NewMovies(db, cache)
 	usersRepo := repo.NewUsers(db)
 	tokensRepo := repo.NewTokens(db)
-	usersService := service.NewUsers(usersRepo, tokensRepo, hasher, []byte("dFscwEtgdS"))
+
+	auditClient, err := amqp_client.NewClient(5672)
+	if err != nil {
+		logrus.WithFields(logrus.Fields{
+			"method":  "amqp_client.NewClient",
+			"problem": "creating client",
+		}).Fatal(err)
+	}
+	defer auditClient.CloseConnection()
+
+	usersService := service.NewUsers(usersRepo, tokensRepo, auditClient, hasher, []byte("dFscwEtgdS"))
 
 	handler := rest.NewHandler(booksRepo, usersService)
 
