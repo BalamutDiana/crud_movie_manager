@@ -104,6 +104,17 @@ func (s *Users) SignIn(ctx context.Context, inp domain.SignInInput) (string, str
 		return "", "", err
 	}
 
+	if err := s.auditClient.SendLogRequest(ctx, audit.LogItem{
+		Action:    audit.ACTION_LOGIN,
+		Entity:    audit.ENTITY_USER,
+		EntityID:  user.ID,
+		Timestamp: time.Now(),
+	}); err != nil {
+		logrus.WithFields(logrus.Fields{
+			"method": "Users.SignIn",
+		}).Error("failed to send log request:", err)
+	}
+
 	return s.generateTokens(ctx, user.ID)
 }
 
