@@ -27,8 +27,9 @@ type Movies interface {
 
 type User interface {
 	SignUp(ctx context.Context, inp domain.SignUpInput) error
-	SignIn(ctx context.Context, inp domain.SignInInput) (string, error)
+	SignIn(ctx context.Context, inp domain.SignInInput) (string, string, error)
 	ParseToken(ctx context.Context, token string) (int64, error)
+	RefreshTokens(ctx context.Context, refreshToken string) (string, string, error)
 }
 
 type Handler struct {
@@ -56,6 +57,7 @@ func (h *Handler) InitRouter() *mux.Router {
 	{
 		auth.HandleFunc("/sign-up", h.signUp).Methods(http.MethodPost)
 		auth.HandleFunc("/sign-in", h.signIn).Methods(http.MethodGet)
+		auth.HandleFunc("/refresh", h.refresh).Methods(http.MethodGet)
 	}
 
 	books := r.PathPrefix("/movies").Subrouter()
