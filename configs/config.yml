@@ -1,9 +1,11 @@
 server:
   port: 8080
 db:
-  host: "postgres"
+  host: "localhost"
   port: 5432
   username: "postgres"
   name: "postgres"
   sslmode: "disable"
   password: "1marvin2mode3"
+auth:
+  token_ttl: 15m
