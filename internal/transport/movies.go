@@ -20,7 +20,6 @@ import (
 // @Success     200 {object} []domain.Movie
 // @Router      /movies [get]
 func (h *Handler) getMovies(w http.ResponseWriter, r *http.Request) {
-
 	m, err := h.movieService.List(r.Context())
 	if err != nil {
 		log.WithFields(log.Fields{

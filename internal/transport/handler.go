@@ -66,9 +66,9 @@ func (h *Handler) InitRouter() *mux.Router {
 
 		books.HandleFunc("", h.insertMovie).Methods(http.MethodPost)
 		books.HandleFunc("", h.getMovies).Methods(http.MethodGet)
-		books.HandleFunc("/{id:[0-9]+}", h.getMovieByID).Methods(http.MethodGet)
-		books.HandleFunc("/{id:[0-9]+}", h.deleteMovie).Methods(http.MethodDelete)
-		books.HandleFunc("/{id:[0-9]+}", h.updateMovie).Methods(http.MethodPut)
+		books.HandleFunc("/{id}", h.getMovieByID).Methods(http.MethodGet)
+		books.HandleFunc("/{id}", h.deleteMovie).Methods(http.MethodDelete)
+		books.HandleFunc("/{id}", h.updateMovie).Methods(http.MethodPut)
 	}
 
 	return r

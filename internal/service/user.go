@@ -23,6 +23,7 @@ type PasswordHasher interface {
 type UsersRepository interface {
 	Create(ctx context.Context, user domain.User) error
 	GetByCredentials(ctx context.Context, email, password string) (domain.User, error)
+	CheckUserExist(ctx context.Context, email string) (bool, error)
 }
 
 type SessionsRepository interface {
@@ -54,6 +55,15 @@ func NewUsers(repo UsersRepository, sessionsRepo SessionsRepository, auditClient
 }
 
 func (s *Users) SignUp(ctx context.Context, inp domain.SignUpInput) error {
+	exist, err := s.repo.CheckUserExist(ctx, inp.Email)
+	if err != nil {
+		return err
+	}
+
+	if exist {
+		return domain.ErrUserAlreadyExists
+	}
+
 	password, err := s.hasher.Hash(inp.Password)
 	if err != nil {
 		return err
