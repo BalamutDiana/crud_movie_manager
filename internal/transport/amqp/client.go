@@ -16,7 +16,6 @@ type Client struct {
 }
 
 func NewClient(port int) (*Client, error) {
-
 	var conn *amqp.Connection
 	var ch *amqp.Channel
 
@@ -62,7 +61,6 @@ func (c *Client) CloseConnection() error {
 }
 
 func (c *Client) SendLogRequest(ctx context.Context, req audit.LogItem) error {
-
 	msg, err := json.Marshal(req)
 	if err != nil {
 		return err
