@@ -3,6 +3,7 @@ package transport
 import (
 	"bytes"
 	"context"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -38,6 +39,31 @@ func TestHandler_signUp(t *testing.T) {
 			},
 			expectedStatusCode: 200,
 		},
+		{
+			name:               "Empty Fields",
+			inputBody:          `{"email":"test@gmail.com","password":"qwerty"}`,
+			mockBehavior:       func(s *mock_service.MockUser, ctx context.Context, user domain.SignUpInput) {},
+			expectedStatusCode: 400,
+		},
+		{
+			name:               "Email not valid",
+			inputBody:          `{"name":"Test","email":"test","password":"qwerty"}`,
+			mockBehavior:       func(s *mock_service.MockUser, ctx context.Context, user domain.SignUpInput) {},
+			expectedStatusCode: 400,
+		},
+		{
+			name:      "Service Failure",
+			inputBody: `{"name":"Test","email":"test@gmail.com","password":"qwerty"}`,
+			inputUser: domain.SignUpInput{
+				Name:     "Test",
+				Email:    "test@gmail.com",
+				Password: "qwerty",
+			},
+			mockBehavior: func(s *mock_service.MockUser, ctx context.Context, user domain.SignUpInput) {
+				s.EXPECT().SignUp(gomock.Any(), user).Return(errors.New("service failure"))
+			},
+			expectedStatusCode: 500,
+		},
 	}
 
 	for _, testCase := range testTable {
@@ -68,8 +94,6 @@ func TestHandler_signUp(t *testing.T) {
 
 			//Assert
 			assert.Equal(t, testCase.expectedStatusCode, w.Code)
-
 		})
 	}
-
 }
