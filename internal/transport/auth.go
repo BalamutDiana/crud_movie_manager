@@ -11,6 +11,8 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+//go:generate mockgen -source=handler.go -destination=mocks/mock.go
+
 func (h *Handler) signUp(w http.ResponseWriter, r *http.Request) {
 	reqBytes, err := ioutil.ReadAll(r.Body)
 	if err != nil {
