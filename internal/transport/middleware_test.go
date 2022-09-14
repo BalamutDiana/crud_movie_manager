@@ -1,6 +1,7 @@
 package transport
 
 import (
+	"errors"
 	"net/http/httptest"
 	"testing"
 
@@ -26,6 +27,33 @@ func TestHandler_getTokenFromRequest(t *testing.T) {
 			token:            "token",
 			expectedResponse: "token",
 			expectedError:    nil,
+		},
+		{
+			name:             "No header",
+			headerName:       "",
+			expectedResponse: "",
+			expectedError:    errors.New("empty auth header"),
+		},
+		{
+			name:             "Misspelled Bearer",
+			headerName:       "Authorization",
+			headerValue:      "Berer token",
+			expectedResponse: "",
+			expectedError:    errors.New("invalid auth header"),
+		},
+		{
+			name:             "Bearer without token",
+			headerName:       "Authorization",
+			headerValue:      "Bearer",
+			expectedResponse: "",
+			expectedError:    errors.New("invalid auth header"),
+		},
+		{
+			name:             "Empty token",
+			headerName:       "Authorization",
+			headerValue:      "Bearer ",
+			expectedResponse: "",
+			expectedError:    errors.New("token is empty"),
 		},
 	}
 
