@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -178,6 +179,68 @@ func TestHandler_signIn(t *testing.T) {
 			r.ServeHTTP(w, req)
 
 			//Assert
+			assert.Equal(t, testCase.expectedStatusCode, w.Code)
+			assert.Equal(t, testCase.expectedResponseBody, w.Body.String())
+		})
+	}
+}
+
+func TestHandler_refresh(t *testing.T) {
+	type mockBehavior func(s *mock_service.MockUser, ctx context.Context, cookie string)
+
+	testTable := []struct {
+		name                 string
+		cookie               string
+		mockBehavior         mockBehavior
+		expectedStatusCode   int
+		expectedResponseBody string
+	}{
+		{
+			name:   "OK",
+			cookie: "r",
+			mockBehavior: func(s *mock_service.MockUser, ctx context.Context, cookie string) {
+				s.EXPECT().RefreshTokens(gomock.Any(), cookie).Return("a", "r", nil)
+			},
+			expectedStatusCode:   200,
+			expectedResponseBody: `{"token":"a"}`,
+		},
+	}
+
+	for _, testCase := range testTable {
+		t.Run(testCase.name, func(t *testing.T) {
+			//Init deps
+			c := gomock.NewController(t)
+			//c, ctx := gomock.WithContext(context.TODO(), t)
+			defer c.Finish()
+
+			auth := mock_service.NewMockUser(c)
+			testCase.mockBehavior(auth, context.Background(), testCase.cookie)
+
+			movieRepo := &repo.Movies{}
+			h := NewHandler(movieRepo, auth)
+
+			// Test Server
+			r := mux.NewRouter()
+			a := r.PathPrefix("/auth").Subrouter()
+			{
+				a.HandleFunc("/refresh", h.refresh).Methods(http.MethodGet)
+			}
+
+			//Test Request
+			w := httptest.NewRecorder()
+
+			req := httptest.NewRequest("GET", "/auth/refresh", bytes.NewBufferString(""))
+			co := &http.Cookie{
+				Name:   "refresh-token",
+				Value:  testCase.cookie,
+				MaxAge: 0,
+			}
+			req.AddCookie(co)
+
+			r.ServeHTTP(w, req)
+
+			//Assert
+			fmt.Println(req.Cookies())
 			assert.Equal(t, testCase.expectedStatusCode, w.Code)
 			assert.Equal(t, testCase.expectedResponseBody, w.Body.String())
 		})
