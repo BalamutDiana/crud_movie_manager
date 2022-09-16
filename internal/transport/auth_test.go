@@ -71,7 +71,6 @@ func TestHandler_signUp(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			//Init deps
 			c := gomock.NewController(t)
-			//c, ctx := gomock.WithContext(context.TODO(), t)
 			defer c.Finish()
 
 			auth := mock_service.NewMockUser(c)
@@ -156,7 +155,6 @@ func TestHandler_signIn(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			//Init deps
 			c := gomock.NewController(t)
-			//c, ctx := gomock.WithContext(context.TODO(), t)
 			defer c.Finish()
 
 			auth := mock_service.NewMockUser(c)
@@ -204,13 +202,21 @@ func TestHandler_refresh(t *testing.T) {
 			expectedStatusCode:   200,
 			expectedResponseBody: `{"token":"a"}`,
 		},
+		{
+			name:   "Service Failure",
+			cookie: "r",
+			mockBehavior: func(s *mock_service.MockUser, ctx context.Context, cookie string) {
+				s.EXPECT().RefreshTokens(gomock.Any(), cookie).Return("", "", errors.New("service failure"))
+			},
+			expectedStatusCode:   500,
+			expectedResponseBody: ``,
+		},
 	}
 
 	for _, testCase := range testTable {
 		t.Run(testCase.name, func(t *testing.T) {
 			//Init deps
 			c := gomock.NewController(t)
-			//c, ctx := gomock.WithContext(context.TODO(), t)
 			defer c.Finish()
 
 			auth := mock_service.NewMockUser(c)
@@ -229,7 +235,7 @@ func TestHandler_refresh(t *testing.T) {
 			//Test Request
 			w := httptest.NewRecorder()
 
-			req := httptest.NewRequest("GET", "/auth/refresh", bytes.NewBufferString(""))
+			req := httptest.NewRequest("GET", "/auth/refresh", nil)
 			co := &http.Cookie{
 				Name:   "refresh-token",
 				Value:  testCase.cookie,
