@@ -15,6 +15,8 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+//go:generate mockgen -source=user.go -destination=mocks/mock.go
+
 // PasswordHasher provides hashing logic to securely store passwords.
 type PasswordHasher interface {
 	Hash(password string) (string, error)
