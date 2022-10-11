@@ -1,4 +1,8 @@
 # Movie list management app
+
+  ### TODO:
+  - add documentation for authorization and registration
+  
   ### Tools:
   - go 1.19
   - postgres
