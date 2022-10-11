@@ -19,7 +19,7 @@ func NewClient(port int) (*Client, error) {
 	var conn *amqp.Connection
 	var ch *amqp.Channel
 
-	addr := fmt.Sprintf("amqp://guest:guest@localhost:%d/", port)
+	addr := fmt.Sprintf("amqp://guest:guest@noteslog:%d/", port)
 
 	conn, err := amqp.Dial(addr)
 	if err != nil {
