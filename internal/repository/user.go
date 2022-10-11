@@ -32,15 +32,16 @@ func (r *Users) GetByCredentials(ctx context.Context, email, password string) (d
 
 func (r *Users) CheckUserExist(ctx context.Context, email string) (bool, error) {
 	var user domain.User
-	err := r.db.QueryRowContext(ctx, "SELECT id WHERE email=$1", email).
+	
+	err := r.db.QueryRowContext(ctx, "SELECT id FROM users WHERE email=$1", email).
 		Scan(&user.ID)
 
 	if err == sql.ErrNoRows {
-		return true, nil
+		return false, nil
 	}
 
 	if err != nil {
 		return true, err
 	}
-	return false, nil
+	return true, nil
 }
